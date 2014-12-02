@@ -58,7 +58,7 @@ function formatRunDate(now) {
         pad(now.getDate()));
 }
 
-function runTest(test, thread, multidb, multicoll, runSeconds, shard, writeOptions) {
+function runTest(test, thread, multidb, multicoll, runSeconds, reportInterval, shard, writeOptions) {
 
     if (typeof writeOptions === "undefined") writeOptions = getDefaultWriteOptions();
     if (typeof shard === "undefined") shard = 0;
@@ -150,7 +150,8 @@ function runTest(test, thread, multidb, multicoll, runSeconds, shard, writeOptio
     var benchArgs = { ops: new_ops,
         seconds: runSeconds,
         host: db.getMongo().host,
-        parallel: thread };
+        parallel: thread,
+        reportInterval: reportInterval };
 
     // invoke the built-in mongo shell function
     var result = benchRun(benchArgs);
@@ -163,8 +164,10 @@ function runTest(test, thread, multidb, multicoll, runSeconds, shard, writeOptio
         result["getmore"] +
         result["command"];
 
-    print("\t" + thread + "\t" + total);
+    var timeSeries = result["timeSeries"];
 
+    print("\t" + thread + "\t" + total);
+    print("\t" + thread + "\t" + timeSeries);
     if ("post" in test) {
         for (var i = 0; i < multidb; i++) {
             for (var j = 0; j < multicoll; j++) {
@@ -180,7 +183,7 @@ function runTest(test, thread, multidb, multicoll, runSeconds, shard, writeOptio
         }
     }
 
-    return { ops_per_sec: total };
+    return { ops_per_sec: total, ops_time_series: timeSeries };
 }
 
 function medianCompare(x, y) {
@@ -340,6 +343,7 @@ function doExecute(test, testFilter) {
  * @param multicoll - multicollection (number of collections)
  * @param seconds - the time to run each performance test for
  * @param trials - the number of trials to run
+ * @param reportInterval - number of seconds between collection of time series data points
  * @param reportLabel - the label for the test run
  * @param testFilter - tests/suites to run, default "sanity"
  * @param reportHost - the hostname for the database to send the reported data to (defaults to localhost)
@@ -350,7 +354,7 @@ function doExecute(test, testFilter) {
  * @param testBed - testbed information such as server_storage_engine, harness, server_git_commit_date
  * @returns {{}} the results of a run set of tests
  */
-function runTests(threadCounts, multidb, multicoll, seconds, trials, reportLabel, testFilter, reportHost, reportPort, commitDate, shard, writeOptions, testBed) {
+function runTests(threadCounts, multidb, multicoll, seconds, trials, reportInterval, reportLabel, testFilter, reportHost, reportPort, commitDate, shard, writeOptions, testBed) {
 
     if (typeof reportHost === "undefined") reportHost = "localhost";
     if (typeof reportPort === "undefined") reportPort = "27017";
@@ -384,6 +388,7 @@ function runTests(threadCounts, multidb, multicoll, seconds, trials, reportLabel
         basicFields = testBed; // Map
         basicFields.commit = bi.gitVersion;
         basicFields.label = reportLabel;
+        basicFields.reportInterval = reportInterval;
         basicFields.platform = bi.sysInfo.split(" ")[0];
         basicFields.run_date = formatRunDate(startTime);
         basicFields.run_time = startTime;
@@ -421,7 +426,7 @@ function runTests(threadCounts, multidb, multicoll, seconds, trials, reportLabel
                 newResults['run_start_time'] = new Date();
                 for (var j = 0; j < trials; j++) {
                     try {
-                        results[j] = runTest(test, threadCount, multidb, multicoll, seconds, shard, writeOptions);
+                        results[j] = runTest(test, threadCount, multidb, multicoll, seconds, reportInterval, shard, writeOptions);
                     }
                     catch(err) {
                         // Error handling to catch exceptions thrown in/by js for error
@@ -488,6 +493,7 @@ function runTests(threadCounts, multidb, multicoll, seconds, trials, reportLabel
  * @param multicoll - multicollection (number of collections)
  * @param seconds - the time to run each performance test for
  * @param trials - the number of trials to run
+ * @param reportInterval - number of seconds between collection of time series data points
  * @param reportLabel - the label for the test run
  * @param testFilter - tests / suites to run, default "sanity"
  * @param reportHost - the hostname for the database to send the reported data to (defaults to localhost)
@@ -498,8 +504,8 @@ function runTests(threadCounts, multidb, multicoll, seconds, trials, reportLabel
  * @param testBed - testbed information such as server_storage_engine, harness, server_git_commit_date
  * @returns {{}} the results of a run set of tests
  */
-function mongoPerfRunTests(threadCounts, multidb, multicoll, seconds, trials, reportLabel, testFilter, reportHost, reportPort, commitDate, shard, writeOptions, testBed) {
-    testResults = runTests(threadCounts, multidb, multicoll, seconds, trials, reportLabel, testFilter, reportHost, reportPort, commitDate, shard, writeOptions, testBed);
+function mongoPerfRunTests(threadCounts, multidb, multicoll, seconds, trials, reportInterval, reportLabel, testFilter, reportHost, reportPort, commitDate, shard, writeOptions, testBed) {
+    testResults = runTests(threadCounts, multidb, multicoll, seconds, trials, reportInterval, reportLabel, testFilter, reportHost, reportPort, commitDate, shard, writeOptions, testBed);
     print("@@@RESULTS_START@@@");
     print(JSON.stringify(testResults));
     print("@@@RESULTS_END@@@");

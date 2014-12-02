@@ -52,6 +52,9 @@ def parse_arguments():
     parser.add_argument('--trialCount', dest='trials',
                         help='Specify how many trials to run',
                         type=int, default=1)
+    parser.add_argument('--reportInterval', dest='reportInterval',
+                        help='Specify the interval for reporting time series metrics',
+                        type=int, default=0)
     parser.add_argument('--shard', dest='shard',
                         help='Specify shard cluster the test should use, 0 - no shard, 1 - shard with {_id: hashed}, 2 - shard with {_id: 1}',
                         type=int, default=0, choices=[0, 1, 2])
@@ -178,7 +181,8 @@ def send_results_to_dyno(results, label, write_options, test_bed, cmdstr, server
                         "label": label,
                         "testfiles": args.testfiles,
                         "standardDeviation": test['results'][threadrun]['standardDeviation'],
-                        "writeOptions": write_options
+                        "writeOptions": write_options,
+                        "reportInterval": args.reportInterval
                     },
                     "start_time": results['run_start_time'],
                     "end_time": results['run_end_time'],
@@ -369,6 +373,7 @@ def main():
               str(args.multicoll) + ", " +
               str(args.seconds) + ", " +
               str(args.trials) + ", " +
+              str(args.reportInterval) + ", " +
               "'" + args.reportlabel + "', " +
               str(args.testFilter) + ", " +
               "'" + args.reporthost + "', " +
@@ -378,8 +383,8 @@ def main():
               str(json.dumps(write_options)) + ", " +
               str(json.dumps(test_bed)) +
               ");\n")
-    mongo_proc.stdin.write(cmdstr)
     print cmdstr
+    mongo_proc.stdin.write(cmdstr)
     mongo_proc.stdin.close()
 
     # Read test output.
