@@ -164,10 +164,11 @@ function runTest(test, thread, multidb, multicoll, runSeconds, reportInterval, s
         result["getmore"] +
         result["command"];
 
-    var timeSeries = result["timeSeries"];
+    var throughputPerInterval = result["throughputPerInterval"];
 
     print("\t" + thread + "\t" + total);
-    print("\t" + thread + "\t" + timeSeries);
+    print("\t" + thread + "\t" + throughputPerInterval);
+
     if ("post" in test) {
         for (var i = 0; i < multidb; i++) {
             for (var j = 0; j < multicoll; j++) {
@@ -183,7 +184,7 @@ function runTest(test, thread, multidb, multicoll, runSeconds, reportInterval, s
         }
     }
 
-    return { ops_per_sec: total, ops_time_series: timeSeries };
+    return { ops_per_sec: total, throughput_per_interval: throughputPerInterval };
 }
 
 function medianCompare(x, y) {
@@ -446,6 +447,7 @@ function runTests(threadCounts, multidb, multicoll, seconds, trials, reportInter
                 newResults.standardDeviation = Math.sqrt(getVariance(values));
                 newResults.run_end_time = new Date();
                 newResults.n = trials;
+                newResults.throughput_per_interval = results[0].throughput_per_interval; // TODO: how do we want to report and analyze time series data?
                 newResults.elapsed_secs = seconds;  // TODO: update mongo shell to return actual elapsed time
                 threadResults[threadCount] = newResults;
             }

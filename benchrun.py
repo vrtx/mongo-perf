@@ -53,8 +53,8 @@ def parse_arguments():
                         help='Specify how many trials to run',
                         type=int, default=1)
     parser.add_argument('--reportInterval', dest='reportInterval',
-                        help='Specify the interval for reporting time series metrics',
-                        type=int, default=0)
+                        help='Specify the interval (in seconds) for reporting time series metrics',
+                        type=int, default=1)
     parser.add_argument('--shard', dest='shard',
                         help='Specify shard cluster the test should use, 0 - no shard, 1 - shard with {_id: hashed}, 2 - shard with {_id: 1}',
                         type=int, default=0, choices=[0, 1, 2])
